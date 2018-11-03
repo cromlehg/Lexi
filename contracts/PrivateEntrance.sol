@@ -8,7 +8,7 @@ library PrivateEntrance {
   using PrivateEntrance for privateEntrance;
   using Math for uint;
   struct privateEntrance {
-    SpecStorage SpecStorage;
+    SpecStorage specStorage;
     uint investorMaxInvestment;
     uint endTimestamp;
     mapping(address=>bool) hasAccess;
@@ -24,10 +24,10 @@ library PrivateEntrance {
       return 0;
     }
 
-    maxInvestment = pe.investorMaxInvestment;
+    uint maxInvestment = pe.investorMaxInvestment;
 
     // get current investment from revolution 2
-    (uint currInvestment, ) = pe.rev2Storage.investorInfo(investorAddr);
+    (uint currInvestment, ) = pe.specStorage.investorInfo(investorAddr);
     
     if (currInvestment >= maxInvestment) {
       return 0;

@@ -8,6 +8,7 @@ import './utils/Zero.sol';
 import './utils/Address.sol';
 import './RapidGrowthProtection.sol';
 import './PrivateEntrance.sol';
+import './InvestorsStorage.sol';
 
 contract Lexi is Accessibility {
   using RapidGrowthProtection for RapidGrowthProtection.rapidGrowthProtection;
@@ -41,7 +42,7 @@ contract Lexi is Accessibility {
   Percent.percent private m_advertisingPercent = Percent.percent(75, 1000);// 75/1000  *100% = 7.5%
 
   // more events for easy read from blockchain
-  event LogPEInit(uint when, address rev1Storage, address rev2Storage, uint investorMaxInvestment, uint endTimestamp);
+  event LogPEInit(uint when, address specStorage, uint investorMaxInvestment, uint endTimestamp);
   event LogSendExcessOfEther(address indexed addr, uint when, uint value, uint investment, uint excess);
   event LogNewReferral(address indexed addr, address indexed referrerAddr, uint when, uint refBonus);
   event LogRGPInit(uint when, uint startTimestamp, uint maxDailyTotalInvestment, uint activityDays);
@@ -101,14 +102,12 @@ contract Lexi is Accessibility {
 
 
     // init Private Entrance
-    m_privEnter.rev1Storage = Rev1Storage(rev1StorageAddr);
-    m_privEnter.rev2Storage = Rev2Storage(address(m_investors));
+    m_privEnter.specStorage = SpecStorage(address(m_investors));
     m_privEnter.investorMaxInvestment = 50 ether;
     m_privEnter.endTimestamp = timestamp;
     emit LogPEInit(
       now, 
-      address(m_privEnter.rev1Storage), 
-      address(m_privEnter.rev2Storage), 
+      address(m_privEnter.specStorage), 
       m_privEnter.investorMaxInvestment, 
       m_privEnter.endTimestamp
     );
