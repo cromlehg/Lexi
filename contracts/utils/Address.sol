@@ -1,4 +1,4 @@
-pragma solidity 0.4.25;
+pragma solidity 0.4.24;
 
 library Address {
   function toAddress(bytes source) internal pure returns(address addr) {

@@ -1,4 +1,4 @@
-pragma solidity 0.4.25;
+pragma solidity 0.4.24;
 
 library Zero {
   function requireNotZero(address addr) internal pure {
