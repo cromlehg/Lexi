@@ -1,25 +1,24 @@
 pragma solidity 0.4.24;
 
-import './utils/Accessibility.sol';
 import './math/Percent.sol';
 import './math/Math.sol';
 import './math/SafeMath.sol';
-import './utils/Zero.sol';
 import './utils/Address.sol';
 import './RapidGrowthProtection.sol';
 import './PrivateEntrance.sol';
 import './InvestorsStorage.sol';
+import './FeeWallets.sol';
 
-contract Lexi is Accessibility {
+contract Lexi is FeeWallets {
+
+  bool private initialized;
+
   using RapidGrowthProtection for RapidGrowthProtection.rapidGrowthProtection;
   using PrivateEntrance for PrivateEntrance.privateEntrance;
-  using Percent for Percent.percent;
-  using SafeMath for uint;
   using Math for uint;
 
   // easy read for investors
   using Address for *;
-  using Zero for *; 
   
   RapidGrowthProtection.rapidGrowthProtection private m_rgp;
   PrivateEntrance.privateEntrance private m_privEnter;
@@ -29,22 +28,18 @@ contract Lexi is Accessibility {
   // automatically generates getters
   uint public constant minInvesment = 10 finney; //       0.01 eth
   uint public constant maxBalance = 333e5 ether; // 33 300 000 eth
-  address public advertisingAddress;
-  address public adminsAddress;
   uint public investmentsNumber;
   uint public waveStartup;
 
   // percents 
-  Percent.percent private m_1_percent = Percent.percent(1, 100);           //   1/100  *100% = 1%
-  Percent.percent private m_2_percent = Percent.percent(2, 100);           //   2/100  *100% = 2%
-  Percent.percent private m_3_33_percent = Percent.percent(333, 10000);    // 333/10000*100% = 3.33%
-  Percent.percent private m_adminsPercent = Percent.percent(5, 100);       //   5/100  *100% = 5%
-  Percent.percent private m_advertisingPercent = Percent.percent(75, 1000);// 75/1000  *100% = 7.5%
+  Percent.percent private m_referer_percent;
+  Percent.percent private m_referal_percent;
+  Percent.percent private m_common_percent;
 
   // more events for easy read from blockchain
   event LogPEInit(uint when, address specStorage, uint investorMaxInvestment, uint endTimestamp);
   event LogSendExcessOfEther(address indexed addr, uint when, uint value, uint investment, uint excess);
-  event LogNewReferral(address indexed addr, address indexed referrerAddr, uint when, uint refBonus);
+  event LogNewReferral(address indexed addr, address indexed referrerAddr, uint when, uint referalBonus, uint refererBonus);
   event LogRGPInit(uint when, uint startTimestamp, uint maxDailyTotalInvestment, uint activityDays);
   event LogRGPInvestment(address indexed addr, uint when, uint investment, uint indexed day);
   event LogNewInvesment(address indexed addr, uint when, uint investment, uint value);
@@ -66,12 +61,6 @@ contract Lexi is Accessibility {
     _;
   }
 
-  constructor() public {
-    adminsAddress = msg.sender;
-    advertisingAddress = msg.sender;
-    nextWave();
-  }
-
   function() public payable {
     // investor get him dividends
     if (msg.value.isZero()) {
@@ -88,11 +77,11 @@ contract Lexi is Accessibility {
     emit LogDisown(now);
   }
 
-  function init(address rev1StorageAddr, uint timestamp) public onlyOwner {
+  function init(uint timestamp, uint dailyLimit, uint8 activityDays, uint investorMaxLimit) public onlyOwner {
     // init Rapid Growth Protection
     m_rgp.startTimestamp = timestamp + 1;
-    m_rgp.maxDailyTotalInvestment = 500 ether;
-    m_rgp.activityDays = 21;
+    m_rgp.maxDailyTotalInvestment = dailyLimit;
+    m_rgp.activityDays = activityDays;
     emit LogRGPInit(
       now, 
       m_rgp.startTimestamp,
@@ -103,7 +92,7 @@ contract Lexi is Accessibility {
 
     // init Private Entrance
     m_privEnter.specStorage = SpecStorage(address(m_investors));
-    m_privEnter.investorMaxInvestment = 50 ether;
+    m_privEnter.investorMaxInvestment = investorMaxLimit;
     m_privEnter.endTimestamp = timestamp;
     emit LogPEInit(
       now, 
@@ -111,16 +100,6 @@ contract Lexi is Accessibility {
       m_privEnter.investorMaxInvestment, 
       m_privEnter.endTimestamp
     );
-  }
-
-  function setAdvertisingAddress(address addr) public onlyOwner {
-    addr.requireNotZero();
-    advertisingAddress = addr;
-  }
-
-  function setAdminsAddress(address addr) public onlyOwner {
-    addr.requireNotZero();
-    adminsAddress = addr;
   }
 
   function privateEntranceProvideAccessFor(address[] addrs) public onlyOwner {
@@ -139,26 +118,6 @@ contract Lexi is Accessibility {
     return address(this).balance;
   }
 
-  function percent1() public view returns(uint numerator, uint denominator) {
-    (numerator, denominator) = (m_1_percent.num, m_1_percent.den);
-  }
-
-  function percent2() public view returns(uint numerator, uint denominator) {
-    (numerator, denominator) = (m_2_percent.num, m_2_percent.den);
-  }
-
-  function percent3_33() public view returns(uint numerator, uint denominator) {
-    (numerator, denominator) = (m_3_33_percent.num, m_3_33_percent.den);
-  }
-
-  function advertisingPercent() public view returns(uint numerator, uint denominator) {
-    (numerator, denominator) = (m_advertisingPercent.num, m_advertisingPercent.den);
-  }
-
-  function adminsPercent() public view returns(uint numerator, uint denominator) {
-    (numerator, denominator) = (m_adminsPercent.num, m_adminsPercent.den);
-  }
-
   function investorInfo(address investorAddr) public view returns(uint investment, uint paymentTime, bool isReferral) {
     (investment, paymentTime) = m_investors.investorInfo(investorAddr);
     isReferral = m_referrals[investorAddr];
@@ -166,16 +125,6 @@ contract Lexi is Accessibility {
 
   function investorDividendsAtNow(address investorAddr) public view returns(uint dividends) {
     dividends = calcDividends(investorAddr);
-  }
-
-  function dailyPercentAtNow() public view returns(uint numerator, uint denominator) {
-    Percent.percent memory p = dailyPercent();
-    (numerator, denominator) = (p.num, p.den);
-  }
-
-  function refBonusPercentAtNow() public view returns(uint numerator, uint denominator) {
-    Percent.percent memory p = refBonusPercent();
-    (numerator, denominator) = (p.num, p.den);
   }
 
   function getMyDividends() public notFromContract balanceChanged {
@@ -227,8 +176,7 @@ contract Lexi is Accessibility {
     }
 
     // commission
-    advertisingAddress.send(m_advertisingPercent.mul(receivedEther));
-    adminsAddress.send(m_adminsPercent.mul(receivedEther));
+    processFee(receivedEther);
 
     bool senderIsInvestor = m_investors.isInvestor(msg.sender);
 
@@ -238,10 +186,13 @@ contract Lexi is Accessibility {
       
       m_referrals[msg.sender] = true;
       // add referral bonus to investor`s and referral`s investments
-      uint refBonus = refBonusPercent().mmul(investment);
-      assert(m_investors.addInvestment(referrerAddr, refBonus)); // add referrer bonus
-      investment += refBonus;                                    // add referral bonus
-      emit LogNewReferral(msg.sender, referrerAddr, now, refBonus);
+      uint refererBonus = m_referer_percent.mmul(investment);
+      assert(m_investors.addInvestment(referrerAddr, refererBonus)); // add referrer bonus
+
+      uint referalBonus = m_referer_percent.mmul(investment);
+      investment += referalBonus;                                    // add referral bonus
+
+      emit LogNewReferral(msg.sender, referrerAddr, now, referalBonus, refererBonus);
     }
 
     // automatic reinvest - prevent burning dividends
@@ -286,40 +237,23 @@ contract Lexi is Accessibility {
 
     // finaly calculate dividends = ((now - investor.paymentTime) / 10min) * (X * investor.investment)  / 144) 
 
-    Percent.percent memory p = dailyPercent();
+    Percent.percent memory p = m_common_percent;
     dividends = (now.sub(investor.paymentTime) / 10 minutes) * p.mmul(investor.investment) / 144;
   }
 
-  function dailyPercent() internal view returns(Percent.percent memory p) {
-    uint balance = address(this).balance;
-
-    // (3) 3.33% if balance < 1 000 ETH
-    // (2) 2% if 1 000 ETH <= balance <= 33 333 ETH
-    // (1) 1% if 33 333 ETH < balance
-
-    if (balance < 1000 ether) { 
-      p = m_3_33_percent.toMemory(); // (3)
-    } else if ( 1000 ether <= balance && balance <= 33333 ether) {
-      p = m_2_percent.toMemory();    // (2)
-    } else {
-      p = m_1_percent.toMemory();    // (1)
-    }
-  }
-
-  function refBonusPercent() internal view returns(Percent.percent memory p) {
-    uint balance = address(this).balance;
-
-    // (1) 1% if 100 000 ETH < balance
-    // (2) 2% if 10 000 ETH <= balance <= 100 000 ETH
-    // (3) 3.33% if balance < 10 000 ETH   
-    
-    if (balance < 10000 ether) { 
-      p = m_3_33_percent.toMemory(); // (3)
-    } else if ( 10000 ether <= balance && balance <= 100000 ether) {
-      p = m_2_percent.toMemory();    // (2)
-    } else {
-      p = m_1_percent.toMemory();    // (1)
-    }          
+  function initOnce(
+      uint commonPercent,
+      uint commonPercentRate,
+      uint referalPercent, 
+      uint referalPercentRate, 
+      uint refererPercent, 
+      uint refererPercentRate) public onlyOwner {
+    require(initialized == false, "Already initialized!");
+    m_referer_percent = Percent.percent(refererPercent, refererPercentRate);
+    m_referal_percent = Percent.percent(referalPercent, referalPercentRate);
+    m_common_percent = Percent.percent(commonPercent, commonPercentRate);
+    nextWave();
+    initialized = true;
   }
 
   function nextWave() private {
