@@ -26,7 +26,6 @@ contract Lexi is FeeWallets {
   InvestorsStorage private m_investors;
 
   // automatically generates getters
-  uint public constant minInvesment = 10 finney; //       0.01 eth
   uint public constant maxBalance = 333e5 ether; // 33 300 000 eth
   uint public investmentsNumber;
   uint public waveStartup;
@@ -35,6 +34,7 @@ contract Lexi is FeeWallets {
   Percent.percent private m_referer_percent;
   Percent.percent private m_referal_percent;
   Percent.percent private m_common_percent;
+  Percent.percent private m_payments_treshold;
 
   // more events for easy read from blockchain
   event LogPEInit(uint when, address specStorage, uint investorMaxInvestment, uint endTimestamp);
@@ -47,6 +47,7 @@ contract Lexi is FeeWallets {
   event LogPayDividends(address indexed addr, uint when, uint dividends);
   event LogNewInvestor(address indexed addr, uint when);
   event LogBalanceChanged(uint when, uint balance);
+  event LogInvestorDeleted(address addr, uint when);
   event LogNextWave(uint when);
   event LogDisown(uint when);
 
@@ -118,8 +119,8 @@ contract Lexi is FeeWallets {
     return address(this).balance;
   }
 
-  function investorInfo(address investorAddr) public view returns(uint investment, uint paymentTime, bool isReferral) {
-    (investment, paymentTime) = m_investors.investorInfo(investorAddr);
+  function investorInfo(address investorAddr) public view returns(uint investment, uint paymentTime, uint payOut, bool isReferral) {
+    (investment, paymentTime, payOut) = m_investors.investorInfo(investorAddr);
     isReferral = m_referrals[investorAddr];
   }
 
@@ -141,15 +142,25 @@ contract Lexi is FeeWallets {
       dividends = address(this).balance;
     } 
 
+    //
+    uint canToPayOut = canPayOut(msg.sender);
+    if(dividends > canToPayOut) {
+      dividends = canToPayOut;
+    } 
+    
     // transfer dividends to investor
     msg.sender.transfer(dividends);
     emit LogPayDividends(msg.sender, now, dividends);
+
+    if(dividends == canToPayOut) {
+      assert(m_investors.deleteInvestor(msg.sender));
+      emit LogInvestorDeleted(msg.sender, now);
+    }
   }
 
   function doInvest(address referrerAddr) public payable notFromContract balanceChanged {
     uint investment = msg.value;
     uint receivedEther = msg.value;
-    require(investment >= minInvesment, "investment must be >= minInvesment");
     require(address(this).balance <= maxBalance, "the contract eth balance limit");
 
     if (m_rgp.isActive()) { 
@@ -217,8 +228,17 @@ contract Lexi is FeeWallets {
   }
 
   function getMemInvestor(address investorAddr) internal view returns(InvestorsStorage.Investor memory) {
-    (uint investment, uint paymentTime) = m_investors.investorInfo(investorAddr);
-    return InvestorsStorage.Investor(investment, paymentTime);
+    (uint investment, uint paymentTime, uint payOut) = m_investors.investorInfo(investorAddr);
+    return InvestorsStorage.Investor(investment, paymentTime, payOut);
+  }
+
+  function canPayOut(address investorAddr) internal view returns(uint canPayOutDividents) {
+    InvestorsStorage.Investor memory investor = getMemInvestor(investorAddr);
+
+   
+    Percent.percent memory p = m_payments_treshold;
+    uint maxCanPayOut = p.mmul(investor.investment);
+    return maxCanPayOut - investor.payOut;
   }
 
   function calcDividends(address investorAddr) internal view returns(uint dividends) {
@@ -242,6 +262,8 @@ contract Lexi is FeeWallets {
   }
 
   function initOnce(
+      uint paymentsThresholdPercent,
+      uint paymentsThresholdPercentRate,
       uint commonPercent,
       uint commonPercentRate,
       uint referalPercent, 
@@ -252,6 +274,7 @@ contract Lexi is FeeWallets {
     m_referer_percent = Percent.percent(refererPercent, refererPercentRate);
     m_referal_percent = Percent.percent(referalPercent, referalPercentRate);
     m_common_percent = Percent.percent(commonPercent, commonPercentRate);
+    m_payments_treshold = Percent.percent(paymentsThresholdPercent, paymentsThresholdPercentRate);
     nextWave();
     initialized = true;
   }
