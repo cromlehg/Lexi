@@ -2,7 +2,6 @@
   "name": "Lexi",
   "version": "1.0.0",
   "description": "",
-  "main": "truffle.js",
   "dependencies": {
     "babel-polyfill": "^6.26.0",
     "babel-preset-env": "^1.6.1",
@@ -10,18 +9,27 @@
     "chai": "^4.1.2",
     "chai-as-promised": "^7.0.0",
     "chai-bignumber": "^2.0.2",
+    "dotenv": "^4.0.0",
     "ethereumjs-util": "^5.1.3",
+    "ethjs-abi": "^0.2.1",
     "ganache-cli": "^6.0.3",
+    "ganache-core": "^2.2.1",
+    "moment": "^2.21.0",
     "npm": "^6.1.0",
+    "pify": "^4.0.0",
     "truffle": "^4.1.13",
     "truffle-flattener": "^1.2.5",
     "truffle-hdwallet-provider": "0.0.3",
     "web3": "^0.20.4"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "coveralls": "^3.0.2",
+    "solidity-coverage": "^0.5.8"
+  },
   "scripts": {
     "compile": " rm -rf ./build && ./node_modules/.bin/truffle compile",
-    "test": "./scripts/test.sh"
+    "test": "USE_GANACHE=true ./node_modules/.bin/truffle test --network ganache",
+    "coverage": "./node_modules/.bin/solidity-coverage"
   },
   "repository": {
     "type": "git",
