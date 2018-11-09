@@ -12,6 +12,12 @@ contract('RapidGrowthProtection', function ([_, owner]) {
     instance = await RapidGrowthProtection.new({ from: owner });
   });
   describe('currDay', () => {
+    it('0 if start later then now', async () => {
+      let b = await latestBlock();
+      await instance.setStartTimestamp(b.timestamp + duration.days(1));
+      let r = await instance.testCurrDay();
+      assert.equal(r.toString(10), '0');
+    });
     it('1 on firs day', async () => {
       let b = await latestBlock();
       await instance.setStartTimestamp(b.timestamp);

@@ -28,8 +28,14 @@ contract('InvestorsStorage', () => {
       it('newInvestor', async () => {
         await assertRevert(instance.newInvestor(addr1, 10, 10, { from: addr1 }));
       });
+      it('deleteInvestor', async () => {
+        await assertRevert(instance.deleteInvestor(addr1, { from: addr1 }));
+      });
       it('addInvestment', async () => {
         await assertRevert(instance.addInvestment(addr1, 10, { from: addr1 }));
+      });
+      it('addPayOut', async () => {
+        await assertRevert(instance.addPayOut(addr1, 10, { from: addr1 }));
       });
       it('setPaymentTime', async () => {
         await assertRevert(instance.setPaymentTime(addr1, 10, { from: addr1 }));
@@ -84,6 +90,27 @@ contract('InvestorsStorage', () => {
         let r1 = await instance.isInvestor(addr2);
         assert.equal(r1, false);
         assert.equal(r[1].toString(10), '0');
+      });
+      it('addPayOut if investor', async () => {
+        await instance.addPayOut(addr1, 1, { from: owner });
+        let r = await instance.investorInfo(addr1);
+        assert.equal(r[2].toString(10), '1');
+      });
+      it('addPayOut if not investor', async () => {
+        await instance.addPayOut(addr2, 10, { from: owner });
+        let r = await instance.investorInfo(addr2);
+        let r1 = await instance.isInvestor(addr2);
+        let payOut = await instance.getPayOut(addr2);
+        assert.equal(r1, false);
+        assert.equal(r[2].toString(10), '10');
+        assert.equal(payOut.toString(10), '10');
+      });
+      it('delete Investor', async () => {
+        let beforeDel = await instance.isInvestor(addr1);
+        assert.equal(beforeDel, true);
+        await instance.deleteInvestor(addr1, { from: owner });
+        let afterDel = await instance.isInvestor(addr1);
+        assert.equal(afterDel, false);
       });
     });
   });

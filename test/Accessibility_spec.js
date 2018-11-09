@@ -24,6 +24,18 @@ contract('Accessibility', () => {
       await instance.accessOnlyOwner({ from: owner });
     });
   });
+  describe('transfer ownership', () => {
+    it ('throw if from not owner', async () => {
+      await assertRevert(instance.transferOwnership(addr1, {from: addr1}));
+    });
+    it ('throw if new owner is zero', async () => {
+      await assertRevert(instance.transferOwnership(0, {from: owner}));
+    });
+    it('success if from owner', async () => {
+      await instance.transferOwnership(addr1, {from: owner});
+      await instance.accessOnlyOwner({ from: addr1 });
+    });
+  });
   describe('disown', () => {
     it('success', async () => {
       await instance.doDisown({ from: owner });
