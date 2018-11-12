@@ -16,12 +16,13 @@ module.exports = {
         'tests/TestMath.sol',
         'tests/TestPercent.sol',
         'tests/TestRapidGrowthProtection.sol',
+        'tests/TestPrivateEntrance.sol',
         'tests/TestZero.sol',
         'tests/TestLexi.sol',
         // mocks 
         'mocks/MockGetMyDividends.sol',
-        'mocks/MockRev1Storage.sol',
-        'mocks/MockRev2Storage.sol',
+        'mocks/MockStorage1.sol',
+        'mocks/MockStorage2.sol',
         'mocks/MockDoInvest.sol',
         // math
         'math/SafeMath.sol',
