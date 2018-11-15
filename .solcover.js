@@ -10,6 +10,7 @@ module.exports = {
     port: 8545,
     testCommand: 'SOLIDITY_COVERAGE=true ../node_modules/.bin/truffle test --network coverage',
     skipFiles: [
+        'Configurator.sol',
         // tests
         'tests/TestAccessibility.sol',
         'tests/TestAddress.sol',
