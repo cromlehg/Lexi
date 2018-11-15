@@ -21,6 +21,7 @@ contract FeeWallets is Accessibility {
   }
 
   function changeFeeWallet(uint i, address wallet) public onlyOwner {
+    require(i < feeWalletsCount, "wallet not exists");
     wallet.requireNotZero();
     feeWallets[i] = wallet;
   }
