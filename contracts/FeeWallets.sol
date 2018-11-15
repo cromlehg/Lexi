@@ -16,6 +16,7 @@ contract FeeWallets is Accessibility {
   address[] private feeWallets;
 
   function feeWalletPercent(uint i) public view returns(uint numerator, uint denominator) {
+    require(i < feeWalletsCount, "wallet not exists");
     (numerator, denominator) = (feePercents[i].num, feePercents[i].den);
   }
 
@@ -25,8 +26,8 @@ contract FeeWallets is Accessibility {
   }
  
   function addFeeWallet(address wallet, uint percent, uint percentRate) public onlyOwner {
-    feePercents[feeWalletsCount] = Percent.percent(percent, percentRate);
-    feeWallets[feeWalletsCount] = wallet;
+    feePercents.push(Percent.percent(percent, percentRate));
+    feeWallets.push(wallet);
     feeWalletsCount = feeWalletsCount.add(1);
   }
 
