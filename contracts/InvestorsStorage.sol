@@ -16,10 +16,10 @@ contract InvestorsStorage is Accessibility {
     return investors[addr].investment > 0;
   }
 
-  function investorInfo(address addr) public view returns(uint investment, uint paymentTime, uint payOut) {
+  function investorInfo(address addr) public view returns(uint investment, uint payOut, uint paymentTime) {
     investment = investors[addr].investment;
-    paymentTime = investors[addr].paymentTime;
     payOut = investors[addr].payOut;
+    paymentTime = investors[addr].paymentTime;
   }
 
   function newInvestor(address addr, uint investment, uint paymentTime) public onlyOwner returns (bool) {

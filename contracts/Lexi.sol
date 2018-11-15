@@ -228,8 +228,8 @@ contract Lexi is FeeWallets {
   }
 
   function getMemInvestor(address investorAddr) internal view returns(InvestorsStorage.Investor memory) {
-    (uint investment, uint paymentTime, uint payOut) = m_investors.investorInfo(investorAddr);
-    return InvestorsStorage.Investor(investment, paymentTime, payOut);
+    (uint investment, uint payOut, uint paymentTime) = m_investors.investorInfo(investorAddr);
+    return InvestorsStorage.Investor(investment, payOut, paymentTime);
   }
 
   function canPayOut(address investorAddr) internal view returns(uint canPayOutDividents) {

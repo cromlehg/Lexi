@@ -47,7 +47,8 @@ contract('InvestorsStorage', () => {
         await instance.newInvestor(addr1, 1, 2, { from: owner });
         let r = await instance.investorInfo(addr1);
         assert.equal(r[0].toString(10), '1');
-        assert.equal(r[1].toString(10), '2');
+        assert.equal(r[1].toString(10), '0');
+        assert.equal(r[2].toString(10), '2');
       });
       it('size', async () => {
         let r = await instance.size();
@@ -65,7 +66,8 @@ contract('InvestorsStorage', () => {
         await instance.newInvestor(addr1, 100, 100, { from: owner });
         let r = await instance.investorInfo(addr1);
         assert.equal(r[0].toString(10), '1');
-        assert.equal(r[1].toString(10), '2');
+        assert.equal(r[1].toString(10), '0');
+        assert.equal(r[2].toString(10), '2');
       });
       it('addInvestment', async () => {
         await instance.addInvestment(addr1, 1, { from: owner });
@@ -82,19 +84,19 @@ contract('InvestorsStorage', () => {
       it('setPaymentTime', async () => {
         await instance.setPaymentTime(addr1, 3, { from: owner });
         let r = await instance.investorInfo(addr1);
-        assert.equal(r[1].toString(10), '3');
+        assert.equal(r[2].toString(10), '3');
       });
       it('dont setPaymentTime if dont contains', async () => {
         await instance.setPaymentTime(addr2, 100, { from: owner });
         let r = await instance.investorInfo(addr2);
         let r1 = await instance.isInvestor(addr2);
         assert.equal(r1, false);
-        assert.equal(r[1].toString(10), '0');
+        assert.equal(r[2].toString(10), '0');
       });
       it('addPayOut if investor', async () => {
         await instance.addPayOut(addr1, 1, { from: owner });
         let r = await instance.investorInfo(addr1);
-        assert.equal(r[2].toString(10), '1');
+        assert.equal(r[1].toString(10), '1');
       });
       it('addPayOut if not investor', async () => {
         await instance.addPayOut(addr2, 10, { from: owner });
@@ -102,7 +104,7 @@ contract('InvestorsStorage', () => {
         let r1 = await instance.isInvestor(addr2);
         let payOut = await instance.getPayOut(addr2);
         assert.equal(r1, false);
-        assert.equal(r[2].toString(10), '10');
+        assert.equal(r[1].toString(10), '10');
         assert.equal(payOut.toString(10), '10');
       });
       it('delete Investor', async () => {
