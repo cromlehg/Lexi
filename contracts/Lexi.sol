@@ -119,8 +119,8 @@ contract Lexi is FeeWallets {
     return address(this).balance;
   }
 
-  function investorInfo(address investorAddr) public view returns(uint investment, uint paymentTime, uint payOut, bool isReferral) {
-    (investment, paymentTime, payOut) = m_investors.investorInfo(investorAddr);
+  function investorInfo(address investorAddr) public view returns(uint investment, uint payOut, uint paymentTime, bool isReferral) {
+    (investment, payOut, paymentTime) = m_investors.investorInfo(investorAddr);
     isReferral = m_referrals[investorAddr];
   }
 
