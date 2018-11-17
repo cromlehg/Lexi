@@ -31,15 +31,15 @@ contract Lexi is FeeWallets {
   uint public waveStartup;
 
   // percents 
-  Percent.percent private m_referer_percent;
-  Percent.percent private m_referal_percent;
+  Percent.percent private m_referrer_percent;
+  Percent.percent private m_referral_percent;
   Percent.percent private m_common_percent;
   Percent.percent private m_payments_treshold;
 
   // more events for easy read from blockchain
   event LogPEInit(uint when, address specStorage, uint investorMaxInvestment, uint endTimestamp);
   event LogSendExcessOfEther(address indexed addr, uint when, uint value, uint investment, uint excess);
-  event LogNewReferral(address indexed addr, address indexed referrerAddr, uint when, uint referalBonus, uint refererBonus);
+  event LogNewReferral(address indexed addr, address indexed referrerAddr, uint when, uint referralBonus, uint referrerBonus);
   event LogRGPInit(uint when, uint startTimestamp, uint maxDailyTotalInvestment, uint activityDays);
   event LogRGPInvestment(address indexed addr, uint when, uint investment, uint indexed day);
   event LogNewInvesment(address indexed addr, uint when, uint investment, uint value);
@@ -197,13 +197,13 @@ contract Lexi is FeeWallets {
       
       m_referrals[msg.sender] = true;
       // add referral bonus to investor`s and referral`s investments
-      uint refererBonus = m_referer_percent.mmul(investment);
-      assert(m_investors.addInvestment(referrerAddr, refererBonus)); // add referrer bonus
+      uint referrerBonus = m_referrer_percent.mmul(investment);
+      assert(m_investors.addInvestment(referrerAddr, referrerBonus)); // add referrer bonus
 
-      uint referalBonus = m_referer_percent.mmul(investment);
-      investment += referalBonus;                                    // add referral bonus
+      uint referralBonus = m_referrer_percent.mmul(investment);
+      investment += referralBonus;                                    // add referral bonus
 
-      emit LogNewReferral(msg.sender, referrerAddr, now, referalBonus, refererBonus);
+      emit LogNewReferral(msg.sender, referrerAddr, now, referralBonus, referrerBonus);
     }
 
     // automatic reinvest - prevent burning dividends
@@ -266,13 +266,13 @@ contract Lexi is FeeWallets {
       uint paymentsThresholdPercentRate,
       uint commonPercent,
       uint commonPercentRate,
-      uint referalPercent, 
-      uint referalPercentRate, 
-      uint refererPercent, 
-      uint refererPercentRate) public onlyOwner {
+      uint referralPercent, 
+      uint referralPercentRate, 
+      uint referrerPercent, 
+      uint referrerPercentRate) public onlyOwner {
     require(initialized == false, "Already initialized!");
-    m_referer_percent = Percent.percent(refererPercent, refererPercentRate);
-    m_referal_percent = Percent.percent(referalPercent, referalPercentRate);
+    m_referrer_percent = Percent.percent(referrerPercent, referrerPercentRate);
+    m_referral_percent = Percent.percent(referralPercent, referralPercentRate);
     m_common_percent = Percent.percent(commonPercent, commonPercentRate);
     m_payments_treshold = Percent.percent(paymentsThresholdPercent, paymentsThresholdPercentRate);
     nextWave();
